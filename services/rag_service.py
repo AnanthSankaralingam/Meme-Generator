@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Implement caching for LLM calls - optimize for same inputs
-@lru_cache(maxsize=100)
+@lru_cache(maxsize=50)
 def cached_llm_call(system_message, user_message):
     return llm_call(system_message, user_message)
 
@@ -109,14 +109,16 @@ async def process_rag_query_text_async(query):
 # call wojak glif 
 def glif_call(context, query):
     try:
+        glif_key = os.getenv('GLIF_API_KEY')
         response = requests.post(
             "https://simple-api.glif.app", # clxtc53mi0000ghv10g6irjqj
-            json={"id": "clz4xb23q00071120ixtlgzr9", 
-                  "inputs": {
-                    "query": query,
-                    "context": context,
-                }},
-            headers={"Authorization": f"Bearer {os.getenv('GLIF_API_KEY')}"},
+            json={
+                "id": "clz4xb23q00071120ixtlgzr9", 
+                "inputs": [
+                    context,
+                    query
+                ]},
+            headers={"Authorization": f"Bearer {glif_key}"}, #FIXME Swtich to + os.getenv
         )
         
         response.raise_for_status()
@@ -125,7 +127,7 @@ def glif_call(context, query):
         response_json = json.loads(response_str)  # Parse the string as JSON
 
         output_url = response_json['output']  # Extract the 'output' field
-
+        print("Response JSON:", response_json)
         return output_url
     except requests.exceptions.RequestException as e:
         print(f"HTTP Request failed: {e}")
