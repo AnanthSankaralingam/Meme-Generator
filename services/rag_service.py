@@ -1,3 +1,4 @@
+# process all text and image generation, and vector db queries
 from config import red_collection, blue_collection
 import openai
 import os
@@ -37,10 +38,10 @@ Kamala Harris:
 Donald Trump:
 - focusing on the economy
 
-Briefly state the key points of the policies in a few bullet points without using second-person perspective. Only return bullet points (using •), don't preface the answer.
+Briefly state the key points of the policies in a few bullet points without using second-person perspective. Return 3 bullet points (using •), don't preface the answer.
 """
 
-
+# depracated, adjusted glif to use one context input
 system_prompt_image_trump = f"""
 Generate an image idea that includes Donald Trump's campaign policy and something specific about the 
 concept/profession/question in relation to his policies. If Donald Trump wins the election, the image should make a joke 
@@ -79,6 +80,7 @@ async def async_query_collection(collection, query_text):
 async def async_llm_call(system_message, user_message):
     return cached_llm_call(system_message, user_message)
 
+# query rag db for context, then generate text content with it
 async def process_rag_query_text_async(query):
     try:
         red_results_raw, blue_results_raw = await asyncio.gather(
@@ -86,6 +88,7 @@ async def process_rag_query_text_async(query):
             async_query_collection(blue_collection, query)
         )
 
+        # extract chroma results for context
         red_str = red_results_raw['documents'][0][0]
         blue_str = blue_results_raw['documents'][0][0]
         red_link = red_results_raw['metadatas'][0][0]['source']
@@ -96,6 +99,7 @@ async def process_rag_query_text_async(query):
             async_llm_call(system_prompt, f"Context: {blue_str}\n\nQuery: {query}\n\nResponse:")
         )
 
+        # return text with sources
         return {
             "blue_response": blue_response,
             "red_response": red_response,
@@ -106,34 +110,48 @@ async def process_rag_query_text_async(query):
         logger.error(f"Error in process_rag_query_text_async: {str(e)}")
         raise
     
-# call wojak glif 
+# call wojak glif. if api key runs out, fall back to another one
 def glif_call(context, query):
-    try:
-        glif_key = os.getenv('GLIF_API_KEY')
-        response = requests.post(
-            "https://simple-api.glif.app", # clxtc53mi0000ghv10g6irjqj
-            json={
-                "id": "clz4xb23q00071120ixtlgzr9", 
-                "inputs": [
-                    context,
-                    query
-                ]},
-            headers={"Authorization": f"Bearer {glif_key}"}, #FIXME Swtich to + os.getenv
-        )
+    api_keys = [
+        os.getenv('GLIF_API_KEY_1'),
+        os.getenv('GLIF_API_KEY_2'),
+        os.getenv('GLIF_API_KEY_3')
+    ]
+    
+    payload = {
+        "id": "clz4xb23q00071120ixtlgzr9", # custom glif
+        "inputs": {
+            "context": context,
+            "query": query
+        }
+    }
+    # in case on api key fails, roll back on others
+    for api_key in api_keys:
+        try:
+            response = requests.post(
+                "https://simple-api.glif.app",
+                json=payload,
+                headers={"Authorization": f"Bearer {api_key}"}, # paste key if error
+            )
+            
+            response.raise_for_status()
+            
+            response_json = response.json()
+            
+            if 'error' in response_json:
+                print(f"API Error with key: {response_json['error']}")
+                continue
+            
+            output_url = response_json.get('output') # extract the image url
+            return output_url
         
-        response.raise_for_status()
-        
-        response_str = response.content.decode('utf-8')  # Convert bytes to string
-        response_json = json.loads(response_str)  # Parse the string as JSON
-
-        output_url = response_json['output']  # Extract the 'output' field
-        print("Response JSON:", response_json)
-        return output_url
-    except requests.exceptions.RequestException as e:
-        print(f"HTTP Request failed: {e}")
-    except Exception as e:
-        print(str(e))
-
+        except requests.exceptions.RequestException as e:
+            print(f"HTTP Request failed with key: {e}")
+        except json.JSONDecodeError as e:
+            print(f"JSON Decoding Error with key: {e}")
+        except Exception as e:
+            print(f"Unexpected Error with key: {e}")
+    
     return None
     # response = client_octo.image_gen.generate_sdxl(
 
@@ -145,7 +163,7 @@ def process_rag_query_text(query):
 async def process_rag_query_image_async(query, red_response, blue_response):
     # combine contexts from rag db and send as joint component to glif, along with query
     try:
-        context = f"{red_response}\n{blue_response}"
+        context = f"{"Trump: "+red_response}\n{"Harris" + blue_response}"
         meme = await asyncio.to_thread(glif_call, context=context, query=query)
         if meme is None:
             logger.warning("Failed to generate meme")
@@ -154,5 +172,6 @@ async def process_rag_query_image_async(query, red_response, blue_response):
         logger.error(f"Error in process_rag_query_image_async: {str(e)}")
         return f"Error in process_rag_query_image_async: {str(e)}"
 
+# generate image async
 def process_rag_query_image(query, red_response, blue_response):
     return asyncio.run(process_rag_query_image_async(query, red_response, blue_response))
