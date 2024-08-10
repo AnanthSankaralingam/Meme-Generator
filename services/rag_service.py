@@ -163,7 +163,7 @@ def process_rag_query_text(query):
 async def process_rag_query_image_async(query, red_response, blue_response):
     # combine contexts from rag db and send as joint component to glif, along with query
     try:
-        context = f"{"Trump: "+red_response}\n{"Harris" + blue_response}"
+        context = f"Trump: {red_response}\nHarris: {blue_response}"
         meme = await asyncio.to_thread(glif_call, context=context, query=query)
         if meme is None:
             logger.warning("Failed to generate meme")
