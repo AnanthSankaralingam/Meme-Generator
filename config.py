@@ -11,8 +11,6 @@ load_dotenv()
 
 settings = Settings(
     chroma_server_host=os.getenv('CHROMA_HOST_IP_ADDRESS'),
-    chroma_server_port=8000,  # if needed
-    # Other settings if needed
 )
 
 # Initialize ChromaDB client
