@@ -1,2 +1,4 @@
 .env
 rag-meme-db
+clean_env
+.venv

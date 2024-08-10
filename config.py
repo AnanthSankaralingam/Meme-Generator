@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 import chromadb
-from chromadb.utils import embedding_functions
 from chromadb.config import Settings
 
 '''
@@ -18,5 +17,5 @@ client = chromadb.HttpClient(
         headers=None,
         settings=Settings(),
     )
-red_collection = client.get_or_create_collection(name="Red")
-blue_collection = client.get_or_create_collection(name="Blue")
+red_collection = client.get_collection(name="Red")
+blue_collection = client.get_collection(name="Blue")

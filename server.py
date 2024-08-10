@@ -5,6 +5,8 @@ import awsgi
 
 '''
 Create and run server on aws lambda, since we dont expect much traffic.
+logging flask_cors octoai
+chromadb==0.4.14  asyncio dotenv
 '''
 
 def create_app():
