@@ -15,7 +15,7 @@ load_dotenv()
 if __name__ == '__main__':
     # need to create client with custom ip to reroute to EC2 instance
     client = chromadb.HttpClient(
-        host='54.219.62.184',  # os.getenv('CHROMA_HOST_IP_ADDRESS'),
+        host='18.144.55.30',  # os.getenv('CHROMA_HOST_IP_ADDRESS'),
         port=8000,
         ssl=False,
         headers=None,
@@ -32,8 +32,8 @@ if __name__ == '__main__':
 
     # Try to get the collection using the client
     try:
-        blue_collection = client.get_collection(name="Blue")
-        red_collection = client.get_collection(name="Red")
+        blue_collection = client.get_or_create_collection(name="Blue")
+        red_collection = client.get_or_create_collection(name="Red")
 
         res = red_collection.query(query_texts=["Trump financial policy"], n_results=1)
         print(res)

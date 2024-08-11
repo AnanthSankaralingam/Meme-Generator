@@ -1,7 +1,8 @@
 from flask import Flask
 from flask_cors import CORS
 from router import setup_routes
-import awsgi
+# import awsgi
+# pip install Flask octoai chromadb==0.4.14 
 
 '''
 Create and run server on aws lambda, since we dont expect much traffic.
@@ -19,8 +20,8 @@ def create_app():
 
 app = create_app()
 
-def lambda_handler(event, context):
-    return awsgi.response(app, event, context, base64_content_types={"image/png"})
+# def lambda_handler(event, context):
+#     return awsgi.response(app, event, context, base64_content_types={"image/png"})
 
 if __name__ == '__main__':
     app.run(debug=True)
