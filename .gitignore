@@ -2,3 +2,7 @@
 rag-meme-db
 clean_env
 .venv
+__pycache__
+chroma-deps
+octo-requests-deps
+chroma.log
